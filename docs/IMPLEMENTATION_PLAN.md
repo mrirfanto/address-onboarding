@@ -22,6 +22,7 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - EPIC C / C1 Frontend app scaffold
   - EPIC C / C2 RTK Query API slices
   - EPIC C / C3 Country select + metadata loading flow
+  - EPIC D / D1 Metadata-to-field renderer
 - Notes:
   - Frontend and backend type definitions are intentionally separated (no shared type package).
   - Baseline validation passes: `lint`, `typecheck`, `test`.
@@ -35,8 +36,9 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - Frontend API layer now includes typed RTK Query endpoints for countries, metadata, create/list addresses, and delete address.
   - Frontend now includes country selection and metadata loading flow with country-switch reset behavior and metadata preview.
   - Frontend dev server proxy now forwards `/api` requests to backend port `3001` for local integration.
+  - Frontend now renders dynamic metadata-driven address fields (`text` and `select`) in stable order with disabled-by-default state.
 - Next:
-  - Start EPIC D / D1 Metadata-to-field renderer.
+  - Start EPIC D / D2 Schema generation and RHF integration.
 
 ---
 

@@ -40,6 +40,7 @@ export function AddressEntrySection({
               </Badge>
             ) : null}
           </Grid.Col>
+
           <Grid.Col span={{ base: 12, md: 8 }}>
             <TextInput
               label="Search Address"
@@ -53,27 +54,6 @@ export function AddressEntrySection({
             </Text>
           </Grid.Col>
         </Grid>
-
-        {section.selectedCountry ? (
-          <Stack gap="xs">
-            {section.metadataLoading ? (
-              <Badge color="gray">Loading metadata...</Badge>
-            ) : null}
-            {section.metadataError ? <Badge color="red">Failed to load metadata</Badge> : null}
-            {!section.metadataLoading && !section.metadataError && section.sortedFields.length > 0 ? (
-              <>
-                <Text fw={600} size="sm">
-                  Metadata Preview
-                </Text>
-                {section.sortedFields.map((field) => (
-                  <Text c="dimmed" key={field.key} size="sm">
-                    {field.order}. {field.title} ({field.type}) {field.required ? '• required' : '• optional'}
-                  </Text>
-                ))}
-              </>
-            ) : null}
-          </Stack>
-        ) : null}
       </Stack>
     </Card>
   );

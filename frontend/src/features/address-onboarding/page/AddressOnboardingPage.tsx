@@ -1,5 +1,6 @@
 import { Container, Stack, Text, Title } from '@mantine/core';
 import { useEffect, useState } from 'react';
+import { AddressDetailsSection } from '@features/address-onboarding/components/AddressDetailsSection';
 import { AddressEntrySection } from '@features/address-onboarding/components/AddressEntrySection';
 import { useCountryMetadata } from '@features/address-onboarding/hooks/useCountryMetadata';
 
@@ -26,6 +27,14 @@ export function AddressOnboardingPage() {
           addressSearch={addressSearch}
           onAddressSearchChange={setAddressSearch}
         />
+
+        {countrySection.selectedCountry ? (
+          <AddressDetailsSection
+            fields={countrySection.sortedFields}
+            loading={countrySection.metadataLoading}
+            error={countrySection.metadataError}
+          />
+        ) : null}
       </Stack>
     </Container>
   );
