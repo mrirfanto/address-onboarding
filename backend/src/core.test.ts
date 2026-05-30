@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Request, Response } from 'express';
 import type { AddressRecord, CountryCode, CountryMetadata } from './types/domain.js';
-import { errorHandler, errorRouteHandler, healthHandler, notFoundHandler } from './index.js';
+import { countries, countriesHandler, errorHandler, errorRouteHandler, healthHandler, notFoundHandler } from './index.js';
 
 describe('backend domain type contracts', () => {
   it('CountryCode type accepts only supported literals', () => {
@@ -72,6 +72,26 @@ describe('API bootstrap handlers', () => {
 
     expect(statusCode.value).toBe(200);
     expect(body.value).toEqual({ status: 'ok' });
+  });
+
+  it('GET /api/countries handler returns expected country options in stable order', () => {
+    const { res, statusCode, body } = createMockResponse();
+    countriesHandler({} as Request, res);
+
+    expect(statusCode.value).toBe(200);
+    expect(body.value).toEqual([
+      { code: 'USA', name: 'United States' },
+      { code: 'AUS', name: 'Australia' },
+      { code: 'IDN', name: 'Indonesia' },
+    ]);
+  });
+
+  it('countries constant exposes the same 3 supported countries', () => {
+    expect(countries).toEqual([
+      { code: 'USA', name: 'United States' },
+      { code: 'AUS', name: 'Australia' },
+      { code: 'IDN', name: 'Indonesia' },
+    ]);
   });
 
   it('unknown /api route handler returns 404 NOT_FOUND payload', () => {

@@ -14,12 +14,14 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - EPIC A / A2a Backend domain and API types
   - EPIC A / A2b Frontend API and UI types
   - EPIC B / B1 Express server bootstrap
+  - EPIC B / B2 Countries endpoint
 - Notes:
   - Frontend and backend type definitions are intentionally separated (no shared type package).
   - Baseline validation passes: `lint`, `typecheck`, `test`.
   - Backend now has `/api` base routing, health endpoint, and consistent JSON 404/500 error handling.
+  - Backend countries endpoint now returns contract-aligned options (`USA`, `AUS`, `IDN`) with stable ordering.
 - Next:
-  - Start EPIC B / B2 Countries endpoint.
+  - Start EPIC B / B3 Metadata endpoint.
 
 ---
 

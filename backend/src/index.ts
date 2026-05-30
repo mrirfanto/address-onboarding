@@ -1,11 +1,23 @@
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
+import type { CountryCode } from './types/domain.js';
 
 type ApiErrorResponse = {
   code: string;
   message: string;
   details?: Array<{ field: string; message: string }>;
 };
+
+type CountryOption = {
+  code: CountryCode;
+  name: string;
+};
+
+export const countries: CountryOption[] = [
+  { code: 'USA', name: 'United States' },
+  { code: 'AUS', name: 'Australia' },
+  { code: 'IDN', name: 'Indonesia' },
+];
 
 export function createApp() {
   const app = express();
@@ -15,6 +27,7 @@ export function createApp() {
   app.use(express.json());
 
   api.get('/health', healthHandler);
+  api.get('/countries', countriesHandler);
 
   api.get('/__error', errorRouteHandler);
 
@@ -29,6 +42,10 @@ export function createApp() {
 
 export function healthHandler(_req: Request, res: Response) {
   res.status(200).json({ status: 'ok' });
+}
+
+export function countriesHandler(_req: Request, res: Response) {
+  res.status(200).json(countries);
 }
 
 export function errorRouteHandler() {
