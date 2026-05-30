@@ -238,6 +238,7 @@ export function createApp() {
   api.get('/health', healthHandler);
   api.get('/countries', countriesHandler);
   api.get('/metadata/:countryCode', metadataHandler);
+  api.get('/addresses', listAddressesHandler);
   api.post('/addresses', createAddressHandler);
 
   api.get('/__error', errorRouteHandler);
@@ -304,6 +305,10 @@ export function createAddressHandler(req: Request, res: Response) {
   savedAddresses.push(row);
 
   res.status(201).json(row);
+}
+
+export function listAddressesHandler(_req: Request, res: Response) {
+  res.status(200).json(savedAddresses);
 }
 
 export function errorRouteHandler() {

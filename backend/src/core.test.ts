@@ -8,6 +8,7 @@ import {
   errorHandler,
   errorRouteHandler,
   healthHandler,
+  listAddressesHandler,
   metadataByCountry,
   metadataHandler,
   notFoundHandler,
@@ -268,6 +269,88 @@ describe('API bootstrap handlers', () => {
     expect(body.value).toMatchObject({
       code: 'VALIDATION_ERROR',
     });
+  });
+
+  it('GET /api/addresses returns empty array when no addresses are saved', () => {
+    const { res, statusCode, body } = createMockResponse();
+    listAddressesHandler({} as Request, res);
+
+    expect(statusCode.value).toBe(200);
+    expect(body.value).toEqual([]);
+  });
+
+  it('GET /api/addresses returns saved rows after create', () => {
+    const createResponse = createMockResponse();
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'USA',
+          placeId: 'place_usa_1',
+          values: {
+            line1: '123 Main St',
+            line2: '',
+            city: 'San Francisco',
+            state: 'CA',
+            postalCode: '94105',
+          },
+        },
+      } as unknown as Request,
+      createResponse.res
+    );
+
+    const listResponse = createMockResponse();
+    listAddressesHandler({} as Request, listResponse.res);
+
+    expect(listResponse.statusCode.value).toBe(200);
+    expect(listResponse.body.value).toHaveLength(1);
+    expect(listResponse.body.value).toEqual([
+      expect.objectContaining({
+        id: 'addr_1',
+        countryCode: 'USA',
+        display: '123 Main St, San Francisco, CA 94105, United States',
+      }),
+    ]);
+  });
+
+  it('GET /api/addresses preserves insertion order', () => {
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'USA',
+          values: {
+            line1: '123 Main St',
+            city: 'San Francisco',
+            state: 'CA',
+            postalCode: '94105',
+          },
+        },
+      } as unknown as Request,
+      createMockResponse().res
+    );
+
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'AUS',
+          values: {
+            line1: '1 Collins St',
+            suburb: 'Melbourne',
+            state: 'VIC',
+            postcode: '3000',
+          },
+        },
+      } as unknown as Request,
+      createMockResponse().res
+    );
+
+    const listResponse = createMockResponse();
+    listAddressesHandler({} as Request, listResponse.res);
+
+    expect(listResponse.statusCode.value).toBe(200);
+    expect(listResponse.body.value).toEqual([
+      expect.objectContaining({ id: 'addr_1', countryCode: 'USA' }),
+      expect.objectContaining({ id: 'addr_2', countryCode: 'AUS' }),
+    ]);
   });
 
   it('unknown /api route handler returns 404 NOT_FOUND payload', () => {

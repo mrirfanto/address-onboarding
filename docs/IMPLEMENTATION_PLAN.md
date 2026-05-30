@@ -17,6 +17,7 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - EPIC B / B2 Countries endpoint
   - EPIC B / B3 Metadata endpoint
   - EPIC B / B4 Address create endpoint
+  - EPIC B / B5 Address list endpoint
 - Notes:
   - Frontend and backend type definitions are intentionally separated (no shared type package).
   - Baseline validation passes: `lint`, `typecheck`, `test`.
@@ -24,8 +25,9 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - Backend countries endpoint now returns contract-aligned options (`USA`, `AUS`, `IDN`) with stable ordering.
   - Backend metadata endpoint now returns country-specific field definitions for `USA`, `AUS`, and `IDN` with IDN semantics enforced.
   - Backend address create endpoint now validates by country metadata, generates normalized `display`, and persists addresses in-memory.
+  - Backend address list endpoint now returns all saved addresses from in-memory store with stable insertion order.
 - Next:
-  - Start EPIC B / B5 Address list endpoint.
+  - Start EPIC B / B6 Address delete endpoint.
 
 ---
 
