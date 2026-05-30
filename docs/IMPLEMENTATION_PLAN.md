@@ -35,14 +35,25 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - `lint`, `typecheck`, and test commands run successfully.
   - Folder structure follows feature-based pattern.
 
-### A2. Shared domain types
+### A2a. Backend domain and API types
 
 - Scope:
-  - Add shared types for country, metadata field, address payloads, and API errors.
+  - Add backend-owned types for country, metadata field, address payloads, and API errors.
+  - Keep backend types internal to backend codebase.
 - Depends on: A1
 - Acceptance criteria:
-  - Types cover all payloads in `API_CONTRACT.md`.
-  - No `any` used in API boundary types.
+  - Backend types cover all backend request/response payloads in `API_CONTRACT.md`.
+  - No `any` used in backend API boundary types.
+
+### A2b. Frontend API and UI types
+
+- Scope:
+  - Add frontend-owned types for country options, metadata fields, form values, saved address rows, and API error display state.
+  - Keep frontend types internal to frontend codebase.
+- Depends on: A1
+- Acceptance criteria:
+  - Frontend types cover all frontend API hooks and form/state models from `TDD.md`.
+  - No `any` used in frontend API/UI boundary types.
 
 ---
 
@@ -73,7 +84,7 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - Support `text` and `select` fields only.
   - Enforce PRD-specific IDN field semantics (`province` as `select`, `village` as optional).
   - Return 404 for unsupported country codes.
-- Depends on: B1, A2
+- Depends on: B1, A2a
 - Acceptance criteria:
   - Response shape matches contract (including `title`, `description`, `prefix`, `suffix`, `rules`, `options`).
   - Field order values are stable and usable by frontend.
@@ -85,7 +96,7 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - Validate request against selected country metadata using Zod.
   - Generate normalized `display` string.
   - Persist in in-memory store.
-- Depends on: B3, A2
+- Depends on: B3, A2a
 - Acceptance criteria:
   - Valid payload returns `201` with stored object.
   - Invalid payload returns `400` with `VALIDATION_ERROR` and `details`.
@@ -126,7 +137,7 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
 - Scope:
   - Add endpoints for countries, metadata, create address, list addresses, and delete address.
   - Use native `fetchBaseQuery`.
-- Depends on: C1, A2
+- Depends on: C1, A2b
 - Acceptance criteria:
   - All hooks are typed and aligned with contract.
 
