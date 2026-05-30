@@ -16,14 +16,16 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - EPIC B / B1 Express server bootstrap
   - EPIC B / B2 Countries endpoint
   - EPIC B / B3 Metadata endpoint
+  - EPIC B / B4 Address create endpoint
 - Notes:
   - Frontend and backend type definitions are intentionally separated (no shared type package).
   - Baseline validation passes: `lint`, `typecheck`, `test`.
   - Backend now has `/api` base routing, health endpoint, and consistent JSON 404/500 error handling.
   - Backend countries endpoint now returns contract-aligned options (`USA`, `AUS`, `IDN`) with stable ordering.
   - Backend metadata endpoint now returns country-specific field definitions for `USA`, `AUS`, and `IDN` with IDN semantics enforced.
+  - Backend address create endpoint now validates by country metadata, generates normalized `display`, and persists addresses in-memory.
 - Next:
-  - Start EPIC B / B4 Address create endpoint.
+  - Start EPIC B / B5 Address list endpoint.
 
 ---
 

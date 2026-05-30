@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
-import type { CountryCode, CountryMetadata } from './types/domain.js';
+import { z } from 'zod';
+import type { AddressRecord, CountryCode, CountryMetadata, MetadataField } from './types/domain.js';
 
 type ApiErrorResponse = {
   code: string;
@@ -13,11 +14,19 @@ type CountryOption = {
   name: string;
 };
 
+type AddressCreatePayload = {
+  countryCode: CountryCode;
+  placeId?: string;
+  values: Record<string, string>;
+};
+
 export const countries: CountryOption[] = [
   { code: 'USA', name: 'United States' },
   { code: 'AUS', name: 'Australia' },
   { code: 'IDN', name: 'Indonesia' },
 ];
+export const savedAddresses: AddressRecord[] = [];
+let addressSequence = 1;
 
 export const metadataByCountry: Record<CountryCode, CountryMetadata> = {
   USA: {
@@ -229,6 +238,7 @@ export function createApp() {
   api.get('/health', healthHandler);
   api.get('/countries', countriesHandler);
   api.get('/metadata/:countryCode', metadataHandler);
+  api.post('/addresses', createAddressHandler);
 
   api.get('/__error', errorRouteHandler);
 
@@ -265,12 +275,172 @@ export function metadataHandler(req: Request, res: Response) {
   res.status(200).json(metadataByCountry[countryCode]);
 }
 
+export function createAddressHandler(req: Request, res: Response) {
+  const validation = validateCreateAddressPayload(req.body);
+  if (!validation.ok) {
+    const payload: ApiErrorResponse = {
+      code: 'VALIDATION_ERROR',
+      message: 'Address payload is invalid',
+      details: validation.details,
+    };
+    res.status(400).json(payload);
+    return;
+  }
+
+  const data = validation.data;
+  const countryName = countries.find((country) => country.code === data.countryCode)?.name ?? data.countryCode;
+  const display = buildDisplay(data.countryCode, data.values, countryName);
+
+  const row: AddressRecord = {
+    id: `addr_${addressSequence}`,
+    countryCode: data.countryCode,
+    values: data.values,
+    display,
+    createdAt: new Date().toISOString(),
+    ...(data.placeId ? { placeId: data.placeId } : {}),
+  };
+
+  addressSequence += 1;
+  savedAddresses.push(row);
+
+  res.status(201).json(row);
+}
+
 export function errorRouteHandler() {
   throw new Error('forced test error');
 }
 
 function isCountryCode(value: string): value is CountryCode {
   return value === 'USA' || value === 'AUS' || value === 'IDN';
+}
+
+function validateCreateAddressPayload(payload: unknown):
+  | { ok: true; data: AddressCreatePayload }
+  | { ok: false; details: Array<{ field: string; message: string }> } {
+  const parsed = z
+    .object({
+      countryCode: z.enum(['USA', 'AUS', 'IDN']),
+      placeId: z.string().min(1).optional(),
+      values: z.record(z.string(), z.string()),
+    })
+    .safeParse(payload);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      details: parsed.error.issues.map((issue) => ({
+        field: issue.path.join('.') || 'body',
+        message: issue.message,
+      })),
+    };
+  }
+
+  const countryCode = parsed.data.countryCode;
+  const metadata = metadataByCountry[countryCode];
+  const normalizedValues = normalizeValues(parsed.data.values);
+  const details: Array<{ field: string; message: string }> = [];
+
+  for (const field of metadata.fields) {
+    const value = normalizedValues[field.key] ?? '';
+
+    if (field.required && value.length === 0) {
+      details.push({ field: field.key, message: `${field.title} is required` });
+      continue;
+    }
+
+    if (value.length === 0) {
+      continue;
+    }
+
+    if (field.type === 'select' && field.options && !field.options.some((option) => option.value === value)) {
+      details.push({ field: field.key, message: `${field.title} has an invalid option` });
+      continue;
+    }
+
+    if (field.rules) {
+      validateFieldRules(field, value, details);
+    }
+  }
+
+  if (details.length > 0) {
+    return { ok: false, details };
+  }
+
+  return {
+    ok: true,
+    data: {
+      countryCode,
+      placeId: parsed.data.placeId,
+      values: normalizedValues,
+    },
+  };
+}
+
+function normalizeValues(values: Record<string, string>) {
+  return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value.trim()]));
+}
+
+function validateFieldRules(
+  field: MetadataField,
+  value: string,
+  details: Array<{ field: string; message: string }>
+) {
+  const { rules } = field;
+  if (!rules) return;
+
+  if (rules.length !== undefined && value.length !== rules.length) {
+    details.push({ field: field.key, message: `${field.title} must be exactly ${rules.length} characters` });
+  }
+  if (rules.minLength !== undefined && value.length < rules.minLength) {
+    details.push({ field: field.key, message: `${field.title} must be at least ${rules.minLength} characters` });
+  }
+  if (rules.maxLength !== undefined && value.length > rules.maxLength) {
+    details.push({ field: field.key, message: `${field.title} must be at most ${rules.maxLength} characters` });
+  }
+  if (rules.pattern !== undefined) {
+    const regex = new RegExp(rules.pattern);
+    if (!regex.test(value)) {
+      details.push({ field: field.key, message: `${field.title} format is invalid` });
+    }
+  }
+}
+
+function buildDisplay(countryCode: CountryCode, values: Record<string, string>, countryName: string) {
+  if (countryCode === 'USA') {
+    const statePostal = [values.state, values.postalCode].filter(Boolean).join(' ');
+    return joinDisplayParts([values.line1, values.line2, values.city, statePostal, countryName]);
+  }
+
+  if (countryCode === 'AUS') {
+    const statePostcode = [values.state, values.postcode].filter(Boolean).join(' ');
+    return joinDisplayParts([values.line1, values.line2, values.suburb, statePostcode, countryName]);
+  }
+
+  if (countryCode === 'IDN') {
+    const provincePostal = [values.province, values.postalCode].filter(Boolean).join(' ');
+    return joinDisplayParts([
+      values.streetAddress,
+      values.village,
+      values.district,
+      values.city,
+      provincePostal,
+      countryName,
+    ]);
+  }
+
+  return joinDisplayParts([countryName]);
+}
+
+function joinDisplayParts(parts: Array<string | undefined>) {
+  return parts
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+    .join(', ');
+}
+
+export function resetAddressStore() {
+  savedAddresses.length = 0;
+  addressSequence = 1;
 }
 
 export function notFoundHandler(_req: Request, res: Response) {

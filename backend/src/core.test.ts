@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { Request, Response } from 'express';
 import type { AddressRecord, CountryCode, CountryMetadata } from './types/domain.js';
 import {
+  createAddressHandler,
   countries,
   countriesHandler,
   errorHandler,
@@ -10,6 +11,8 @@ import {
   metadataByCountry,
   metadataHandler,
   notFoundHandler,
+  resetAddressStore,
+  savedAddresses,
 } from './index.js';
 
 describe('backend domain type contracts', () => {
@@ -53,6 +56,10 @@ describe('backend domain type contracts', () => {
 });
 
 describe('API bootstrap handlers', () => {
+  beforeEach(() => {
+    resetAddressStore();
+  });
+
   function createMockResponse() {
     const body: { value: unknown } = { value: null };
     const statusCode: { value: number | null } = { value: null };
@@ -134,6 +141,132 @@ describe('API bootstrap handlers', () => {
     expect(body.value).toEqual({
       code: 'NOT_FOUND',
       message: 'Route not found',
+    });
+  });
+
+  it('POST /api/addresses returns 201 with normalized values and display for valid payload', () => {
+    const { res, statusCode, body } = createMockResponse();
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'USA',
+          placeId: 'place_usa_1',
+          values: {
+            line1: ' 123 Main St ',
+            line2: ' ',
+            city: ' San Francisco ',
+            state: 'CA',
+            postalCode: '94105',
+          },
+        },
+      } as unknown as Request,
+      res
+    );
+
+    expect(statusCode.value).toBe(201);
+    expect(body.value).toMatchObject({
+      id: 'addr_1',
+      countryCode: 'USA',
+      placeId: 'place_usa_1',
+      values: {
+        line1: '123 Main St',
+        line2: '',
+        city: 'San Francisco',
+        state: 'CA',
+        postalCode: '94105',
+      },
+      display: '123 Main St, San Francisco, CA 94105, United States',
+    });
+    expect(savedAddresses).toHaveLength(1);
+  });
+
+  it('POST /api/addresses returns 400 when a required field is missing', () => {
+    const { res, statusCode, body } = createMockResponse();
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'USA',
+          values: {
+            line1: '123 Main St',
+            city: '',
+            state: 'CA',
+            postalCode: '94105',
+          },
+        },
+      } as unknown as Request,
+      res
+    );
+
+    expect(statusCode.value).toBe(400);
+    expect(body.value).toMatchObject({
+      code: 'VALIDATION_ERROR',
+      message: 'Address payload is invalid',
+    });
+  });
+
+  it('POST /api/addresses returns 400 when postal code length is invalid', () => {
+    const { res, statusCode, body } = createMockResponse();
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'USA',
+          values: {
+            line1: '123 Main St',
+            city: 'San Francisco',
+            state: 'CA',
+            postalCode: '9410',
+          },
+        },
+      } as unknown as Request,
+      res
+    );
+
+    expect(statusCode.value).toBe(400);
+    expect(body.value).toMatchObject({
+      code: 'VALIDATION_ERROR',
+    });
+  });
+
+  it('POST /api/addresses returns 400 when select option is invalid', () => {
+    const { res, statusCode, body } = createMockResponse();
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'USA',
+          values: {
+            line1: '123 Main St',
+            city: 'San Francisco',
+            state: 'TX',
+            postalCode: '94105',
+          },
+        },
+      } as unknown as Request,
+      res
+    );
+
+    expect(statusCode.value).toBe(400);
+    expect(body.value).toMatchObject({
+      code: 'VALIDATION_ERROR',
+    });
+  });
+
+  it('POST /api/addresses returns 400 when country is unsupported', () => {
+    const { res, statusCode, body } = createMockResponse();
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'SGP',
+          values: {
+            line1: '123 Main St',
+          },
+        },
+      } as unknown as Request,
+      res
+    );
+
+    expect(statusCode.value).toBe(400);
+    expect(body.value).toMatchObject({
+      code: 'VALIDATION_ERROR',
     });
   });
 
