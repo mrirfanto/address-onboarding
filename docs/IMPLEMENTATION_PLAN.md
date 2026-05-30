@@ -52,6 +52,9 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - Saved addresses now render from `GET /api/addresses` with immediate delete actions and loading/empty/error states.
   - Backend core tests are now organized by endpoint area (health, countries, metadata, search/details, addresses, errors) while preserving happy-path and validation coverage.
   - Frontend minimal tests are now in place with co-located Vitest + RTL coverage for country/metadata flow, autocomplete prefill, manual edit enablement, valid submit flow, and saved rows rendering.
+  - Backend autocomplete/details now use real Google Places API integration with country restrictions and graceful empty-result fallback on missing key/upstream failure.
+  - Backend now loads `.env` at startup for `GOOGLE_PLACES_API_KEY` via dotenv config initialization.
+  - Frontend address search now uses a 300ms debounce before hitting `/api/address-search`.
 - Next:
   - Start EPIC G / G3 End-to-end manual verification.
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Request, Response } from 'express';
 import type { AddressRecord, CountryCode, CountryMetadata } from './types/domain.js';
 import {
@@ -15,8 +15,10 @@ import {
   metadataByCountry,
   metadataHandler,
   notFoundHandler,
+  resetPlacesFetchForTests,
   resetAddressStore,
   savedAddresses,
+  setPlacesFetchForTests,
 } from './index.js';
 
 function createMockResponse() {
@@ -83,8 +85,21 @@ describe('backend domain type contracts', () => {
 });
 
 describe('API handlers', () => {
+  const originalApiKey = process.env.GOOGLE_PLACES_API_KEY;
+
   beforeEach(() => {
     resetAddressStore();
+    resetPlacesFetchForTests();
+    process.env.GOOGLE_PLACES_API_KEY = 'test-api-key';
+  });
+
+  afterEach(() => {
+    resetPlacesFetchForTests();
+    if (originalApiKey === undefined) {
+      delete process.env.GOOGLE_PLACES_API_KEY;
+    } else {
+      process.env.GOOGLE_PLACES_API_KEY = originalApiKey;
+    }
   });
 
   describe('health', () => {
@@ -156,22 +171,31 @@ describe('API handlers', () => {
   });
 
   describe('address search and details', () => {
-    it('GET /api/address-search returns country-filtered suggestions', () => {
+    it('GET /api/address-search returns mapped suggestions from Google autocomplete', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          status: 'OK',
+          predictions: [{ place_id: 'g_place_1', description: '1 Apple Park Way, Cupertino, CA, USA' }],
+        }),
+      });
+      setPlacesFetchForTests(fetchMock as unknown as typeof fetch);
+
       const { res, statusCode, body } = createMockResponse();
-      addressSearchHandler(
+      await addressSearchHandler(
         { query: { query: 'cupertino', countryCode: 'USA' } } as unknown as Request,
         res
       );
 
       expect(statusCode.value).toBe(200);
       expect(body.value).toEqual({
-        suggestions: [{ placeId: 'usa_2', label: '1 Apple Park Way, Cupertino, CA, USA' }],
+        suggestions: [{ placeId: 'g_place_1', label: '1 Apple Park Way, Cupertino, CA, USA' }],
       });
     });
 
-    it('GET /api/address-search returns 400 for invalid search params', () => {
+    it('GET /api/address-search returns 400 for invalid search params', async () => {
       const { res, statusCode, body } = createMockResponse();
-      addressSearchHandler(
+      await addressSearchHandler(
         { query: { query: '', countryCode: 'SGP' } } as unknown as Request,
         res
       );
@@ -183,10 +207,40 @@ describe('API handlers', () => {
       });
     });
 
-    it('GET /api/address-details returns mapped values for valid place id and country', () => {
+    it('GET /api/address-search returns empty suggestions when api key is missing', async () => {
+      delete process.env.GOOGLE_PLACES_API_KEY;
+
       const { res, statusCode, body } = createMockResponse();
-      addressDetailsHandler(
-        { query: { placeId: 'usa_2', countryCode: 'USA' } } as unknown as Request,
+      await addressSearchHandler(
+        { query: { query: 'cupertino', countryCode: 'USA' } } as unknown as Request,
+        res
+      );
+
+      expect(statusCode.value).toBe(200);
+      expect(body.value).toEqual({ suggestions: [] });
+    });
+
+    it('GET /api/address-details returns mapped values for valid place id and country', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          status: 'OK',
+          result: {
+            address_components: [
+              { long_name: '1', types: ['street_number'] },
+              { long_name: 'Apple Park Way', types: ['route'] },
+              { long_name: 'Cupertino', types: ['locality'] },
+              { short_name: 'CA', long_name: 'California', types: ['administrative_area_level_1'] },
+              { long_name: '95014', types: ['postal_code'] },
+            ],
+          },
+        }),
+      });
+      setPlacesFetchForTests(fetchMock as unknown as typeof fetch);
+
+      const { res, statusCode, body } = createMockResponse();
+      await addressDetailsHandler(
+        { query: { placeId: 'g_place_1', countryCode: 'USA' } } as unknown as Request,
         res
       );
 
@@ -202,9 +256,26 @@ describe('API handlers', () => {
       });
     });
 
-    it('GET /api/address-details returns 400 for invalid params', () => {
+    it('GET /api/address-details returns empty values on upstream failure', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({}),
+      });
+      setPlacesFetchForTests(fetchMock as unknown as typeof fetch);
+
       const { res, statusCode, body } = createMockResponse();
-      addressDetailsHandler(
+      await addressDetailsHandler(
+        { query: { placeId: 'g_place_1', countryCode: 'USA' } } as unknown as Request,
+        res
+      );
+
+      expect(statusCode.value).toBe(200);
+      expect(body.value).toEqual({ values: {} });
+    });
+
+    it('GET /api/address-details returns 400 for invalid params', async () => {
+      const { res, statusCode, body } = createMockResponse();
+      await addressDetailsHandler(
         { query: { placeId: '', countryCode: 'SGP' } } as unknown as Request,
         res
       );

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { z } from 'zod';
@@ -24,82 +25,39 @@ type AddressSuggestion = {
   placeId: string;
   label: string;
 };
-type AddressDetailsValues = Record<string, string>;
 
-const suggestionFixtures: Record<CountryCode, AddressSuggestion[]> = {
-  USA: [
-    { placeId: 'usa_1', label: '1600 Amphitheatre Pkwy, Mountain View, CA, USA' },
-    { placeId: 'usa_2', label: '1 Apple Park Way, Cupertino, CA, USA' },
-    { placeId: 'usa_3', label: '350 Fifth Avenue, New York, NY, USA' },
-  ],
-  AUS: [
-    { placeId: 'aus_1', label: '1 Collins St, Melbourne VIC, Australia' },
-    { placeId: 'aus_2', label: '200 George St, Sydney NSW, Australia' },
-  ],
-  IDN: [
-    { placeId: 'idn_1', label: 'Jl. MH Thamrin No. 1, Jakarta, Indonesia' },
-    { placeId: 'idn_2', label: 'Jl. Asia Afrika No. 8, Bandung, Indonesia' },
-  ],
+type GooglePrediction = {
+  description?: string;
+  place_id?: string;
 };
-const detailsFixtures: Record<CountryCode, Record<string, AddressDetailsValues>> = {
-  USA: {
-    usa_1: {
-      line1: '1600 Amphitheatre Pkwy',
-      line2: '',
-      city: 'Mountain View',
-      state: 'CA',
-      postalCode: '94043',
-    },
-    usa_2: {
-      line1: '1 Apple Park Way',
-      line2: '',
-      city: 'Cupertino',
-      state: 'CA',
-      postalCode: '95014',
-    },
-    usa_3: {
-      line1: '350 Fifth Avenue',
-      line2: '',
-      city: 'New York',
-      state: 'NY',
-      postalCode: '10118',
-    },
-  },
-  AUS: {
-    aus_1: {
-      line1: '1 Collins St',
-      line2: '',
-      suburb: 'Melbourne',
-      state: 'VIC',
-      postcode: '3000',
-    },
-    aus_2: {
-      line1: '200 George St',
-      line2: '',
-      suburb: 'Sydney',
-      state: 'NSW',
-      postcode: '2000',
-    },
-  },
-  IDN: {
-    idn_1: {
-      streetAddress: 'Jl. MH Thamrin No. 1',
-      village: '',
-      district: 'Menteng',
-      city: 'Jakarta Pusat',
-      province: 'DKI Jakarta',
-      postalCode: '10310',
-    },
-    idn_2: {
-      streetAddress: 'Jl. Asia Afrika No. 8',
-      village: '',
-      district: 'Sumur Bandung',
-      city: 'Bandung',
-      province: 'Jawa Barat',
-      postalCode: '40111',
-    },
-  },
+
+type GoogleAddressComponent = {
+  long_name?: string;
+  short_name?: string;
+  types?: string[];
 };
+
+type GooglePlacesAutocompleteResponse = {
+  predictions?: GooglePrediction[];
+  status?: string;
+};
+
+type GooglePlaceDetailsResponse = {
+  result?: {
+    address_components?: GoogleAddressComponent[];
+  };
+  status?: string;
+};
+
+type FetchLike = typeof fetch;
+
+const GOOGLE_COUNTRY_COMPONENT: Record<CountryCode, string> = {
+  USA: 'us',
+  AUS: 'au',
+  IDN: 'id',
+};
+
+let placesFetch: FetchLike = globalThis.fetch as FetchLike;
 
 export const countries: CountryOption[] = [
   { code: 'USA', name: 'United States' },
@@ -360,7 +318,7 @@ export function metadataHandler(req: Request, res: Response) {
   res.status(200).json(metadataByCountry[countryCode]);
 }
 
-export function addressSearchHandler(req: Request, res: Response) {
+export async function addressSearchHandler(req: Request, res: Response) {
   const validation = z
     .object({
       query: z.string().trim().min(1),
@@ -383,14 +341,45 @@ export function addressSearchHandler(req: Request, res: Response) {
     return;
   }
 
-  const query = validation.data.query.toLowerCase();
-  const countrySuggestions = suggestionFixtures[validation.data.countryCode];
-  const suggestions = countrySuggestions.filter((item) => item.label.toLowerCase().includes(query));
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) {
+    res.status(200).json({ suggestions: [] });
+    return;
+  }
 
-  res.status(200).json({ suggestions });
+  try {
+    const componentCountry = GOOGLE_COUNTRY_COMPONENT[validation.data.countryCode];
+    const searchUrl = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json');
+    searchUrl.searchParams.set('input', validation.data.query);
+    searchUrl.searchParams.set('components', `country:${componentCountry}`);
+    searchUrl.searchParams.set('key', apiKey);
+
+    const response = await placesFetch(searchUrl.toString());
+    if (!response.ok) {
+      res.status(200).json({ suggestions: [] });
+      return;
+    }
+
+    const payload = (await response.json()) as GooglePlacesAutocompleteResponse;
+    if (payload.status !== 'OK' && payload.status !== 'ZERO_RESULTS') {
+      res.status(200).json({ suggestions: [] });
+      return;
+    }
+
+    const suggestions: AddressSuggestion[] = (payload.predictions ?? [])
+      .filter((prediction) => prediction.place_id && prediction.description)
+      .map((prediction) => ({
+        placeId: prediction.place_id as string,
+        label: prediction.description as string,
+      }));
+
+    res.status(200).json({ suggestions });
+  } catch {
+    res.status(200).json({ suggestions: [] });
+  }
 }
 
-export function addressDetailsHandler(req: Request, res: Response) {
+export async function addressDetailsHandler(req: Request, res: Response) {
   const validation = z
     .object({
       placeId: z.string().trim().min(1),
@@ -413,8 +402,38 @@ export function addressDetailsHandler(req: Request, res: Response) {
     return;
   }
 
-  const values = detailsFixtures[validation.data.countryCode][validation.data.placeId] ?? {};
-  res.status(200).json({ values });
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) {
+    res.status(200).json({ values: {} });
+    return;
+  }
+
+  try {
+    const detailUrl = new URL('https://maps.googleapis.com/maps/api/place/details/json');
+    detailUrl.searchParams.set('place_id', validation.data.placeId);
+    detailUrl.searchParams.set('fields', 'address_components');
+    detailUrl.searchParams.set('key', apiKey);
+
+    const response = await placesFetch(detailUrl.toString());
+    if (!response.ok) {
+      res.status(200).json({ values: {} });
+      return;
+    }
+
+    const payload = (await response.json()) as GooglePlaceDetailsResponse;
+    if (payload.status !== 'OK') {
+      res.status(200).json({ values: {} });
+      return;
+    }
+
+    const values = mapGoogleAddressComponents(
+      validation.data.countryCode,
+      payload.result?.address_components ?? []
+    );
+    res.status(200).json({ values });
+  } catch {
+    res.status(200).json({ values: {} });
+  }
 }
 
 export function createAddressHandler(req: Request, res: Response) {
@@ -609,9 +628,64 @@ function joinDisplayParts(parts: Array<string | undefined>) {
     .join(', ');
 }
 
+function mapGoogleAddressComponents(countryCode: CountryCode, components: GoogleAddressComponent[]) {
+  const byType = (type: string) => components.find((component) => component.types?.includes(type));
+  const streetNumber = byType('street_number')?.long_name ?? '';
+  const route = byType('route')?.long_name ?? '';
+  const line1 = [streetNumber, route].filter(Boolean).join(' ').trim();
+  const locality =
+    byType('locality')?.long_name ??
+    byType('postal_town')?.long_name ??
+    byType('administrative_area_level_2')?.long_name ??
+    '';
+
+  if (countryCode === 'USA') {
+    return compactValues({
+      line1,
+      line2: '',
+      city: locality,
+      state: byType('administrative_area_level_1')?.short_name ?? '',
+      postalCode: byType('postal_code')?.long_name ?? '',
+    });
+  }
+
+  if (countryCode === 'AUS') {
+    return compactValues({
+      line1,
+      line2: '',
+      suburb: locality,
+      state: byType('administrative_area_level_1')?.short_name ?? '',
+      postcode: byType('postal_code')?.long_name ?? '',
+    });
+  }
+
+  return compactValues({
+    streetAddress: line1,
+    village: byType('administrative_area_level_4')?.long_name ?? '',
+    district: byType('administrative_area_level_3')?.long_name ?? '',
+    city: locality,
+    province: byType('administrative_area_level_1')?.long_name ?? '',
+    postalCode: byType('postal_code')?.long_name ?? '',
+  });
+}
+
+function compactValues(values: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value.trim().length > 0 || value === '')
+  );
+}
+
 export function resetAddressStore() {
   savedAddresses.length = 0;
   addressSequence = 1;
+}
+
+export function setPlacesFetchForTests(fetchFn: FetchLike) {
+  placesFetch = fetchFn;
+}
+
+export function resetPlacesFetchForTests() {
+  placesFetch = globalThis.fetch as FetchLike;
 }
 
 export function notFoundHandler(_req: Request, res: Response) {
