@@ -6,6 +6,21 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
 
 ---
 
+## Progress Snapshot
+
+- Status: In progress
+- Completed:
+  - EPIC A / A1 Repository setup and standards
+  - EPIC A / A2a Backend domain and API types
+  - EPIC A / A2b Frontend API and UI types
+- Notes:
+  - Frontend and backend type definitions are intentionally separated (no shared type package).
+  - Baseline validation passes: `lint`, `typecheck`, `test`.
+- Next:
+  - Start EPIC B / B1 Express server bootstrap.
+
+---
+
 ## 2) Delivery Sequence
 
 1. Project setup and baseline standards

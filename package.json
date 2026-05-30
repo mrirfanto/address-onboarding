@@ -1,0 +1,14 @@
+{
+  "name": "global-address-onboarding-mvp",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "sh -c 'npm run dev:backend & npm run dev:frontend'",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "lint": "npm run lint --prefix frontend && npm run lint --prefix backend",
+    "typecheck": "npm run typecheck --prefix frontend && npm run typecheck --prefix backend",
+    "test": "npm run test --prefix frontend && npm run test --prefix backend"
+  }
+}
