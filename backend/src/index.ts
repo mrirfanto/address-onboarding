@@ -240,6 +240,7 @@ export function createApp() {
   api.get('/metadata/:countryCode', metadataHandler);
   api.get('/addresses', listAddressesHandler);
   api.post('/addresses', createAddressHandler);
+  api.delete('/addresses/:id', deleteAddressHandler);
 
   api.get('/__error', errorRouteHandler);
 
@@ -309,6 +310,31 @@ export function createAddressHandler(req: Request, res: Response) {
 
 export function listAddressesHandler(_req: Request, res: Response) {
   res.status(200).json(savedAddresses);
+}
+
+export function deleteAddressHandler(req: Request, res: Response) {
+  const idParam = req.params.id;
+  const id = Array.isArray(idParam) ? idParam[0] : idParam;
+
+  if (!id) {
+    res.status(404).json({
+      code: 'ADDRESS_NOT_FOUND',
+      message: "Address '' was not found",
+    });
+    return;
+  }
+
+  const index = savedAddresses.findIndex((row) => row.id === id);
+  if (index < 0) {
+    res.status(404).json({
+      code: 'ADDRESS_NOT_FOUND',
+      message: `Address '${id}' was not found`,
+    });
+    return;
+  }
+
+  savedAddresses.splice(index, 1);
+  res.status(204).send();
 }
 
 export function errorRouteHandler() {

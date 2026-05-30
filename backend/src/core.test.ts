@@ -5,6 +5,7 @@ import {
   createAddressHandler,
   countries,
   countriesHandler,
+  deleteAddressHandler,
   errorHandler,
   errorRouteHandler,
   healthHandler,
@@ -70,6 +71,7 @@ describe('API bootstrap handlers', () => {
         statusCode.value = code;
         return response;
       },
+      send: () => response,
       json: (payload: unknown) => {
         body.value = payload;
         return response;
@@ -350,6 +352,98 @@ describe('API bootstrap handlers', () => {
     expect(listResponse.body.value).toEqual([
       expect.objectContaining({ id: 'addr_1', countryCode: 'USA' }),
       expect.objectContaining({ id: 'addr_2', countryCode: 'AUS' }),
+    ]);
+  });
+
+  it('DELETE /api/addresses/:id removes existing address and returns 204', () => {
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'USA',
+          values: {
+            line1: '123 Main St',
+            city: 'San Francisco',
+            state: 'CA',
+            postalCode: '94105',
+          },
+        },
+      } as unknown as Request,
+      createMockResponse().res
+    );
+
+    const { res, statusCode } = createMockResponse();
+    deleteAddressHandler({ params: { id: 'addr_1' } } as unknown as Request, res);
+
+    expect(statusCode.value).toBe(204);
+    expect(savedAddresses).toHaveLength(0);
+  });
+
+  it('DELETE /api/addresses/:id returns 404 when id is unknown', () => {
+    const { res, statusCode, body } = createMockResponse();
+    deleteAddressHandler({ params: { id: 'addr_999' } } as unknown as Request, res);
+
+    expect(statusCode.value).toBe(404);
+    expect(body.value).toEqual({
+      code: 'ADDRESS_NOT_FOUND',
+      message: "Address 'addr_999' was not found",
+    });
+  });
+
+  it('GET /api/addresses keeps remaining rows after deletion in stable order', () => {
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'USA',
+          values: {
+            line1: '123 Main St',
+            city: 'San Francisco',
+            state: 'CA',
+            postalCode: '94105',
+          },
+        },
+      } as unknown as Request,
+      createMockResponse().res
+    );
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'AUS',
+          values: {
+            line1: '1 Collins St',
+            suburb: 'Melbourne',
+            state: 'VIC',
+            postcode: '3000',
+          },
+        },
+      } as unknown as Request,
+      createMockResponse().res
+    );
+    createAddressHandler(
+      {
+        body: {
+          countryCode: 'IDN',
+          values: {
+            province: 'DKI Jakarta',
+            city: 'Jakarta Selatan',
+            district: 'Kebayoran Baru',
+            village: 'Gandaria Utara',
+            postalCode: '12140',
+            streetAddress: 'Jl. KH. Ahmad Dahlan No. 10',
+          },
+        },
+      } as unknown as Request,
+      createMockResponse().res
+    );
+
+    deleteAddressHandler({ params: { id: 'addr_2' } } as unknown as Request, createMockResponse().res);
+
+    const listResponse = createMockResponse();
+    listAddressesHandler({} as Request, listResponse.res);
+
+    expect(listResponse.statusCode.value).toBe(200);
+    expect(listResponse.body.value).toEqual([
+      expect.objectContaining({ id: 'addr_1', countryCode: 'USA' }),
+      expect.objectContaining({ id: 'addr_3', countryCode: 'IDN' }),
     ]);
   });
 
