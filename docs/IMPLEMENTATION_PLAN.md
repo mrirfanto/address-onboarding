@@ -19,6 +19,7 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - EPIC B / B4 Address create endpoint
   - EPIC B / B5 Address list endpoint
   - EPIC B / B6 Address delete endpoint
+  - EPIC C / C1 Frontend app scaffold
 - Notes:
   - Frontend and backend type definitions are intentionally separated (no shared type package).
   - Baseline validation passes: `lint`, `typecheck`, `test`.
@@ -28,8 +29,9 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - Backend address create endpoint now validates by country metadata, generates normalized `display`, and persists addresses in-memory.
   - Backend address list endpoint now returns all saved addresses from in-memory store with stable insertion order.
   - Backend delete endpoint now supports immediate deletion by id with `204` on success and structured `404` on not found.
+  - Frontend scaffold now includes Mantine + Redux provider wiring, RTK Query base API setup, and minimal onboarding shell sections.
 - Next:
-  - Start EPIC C / C1 Frontend app scaffold.
+  - Start EPIC C / C2 RTK Query API slices.
 
 ---
 
