@@ -28,6 +28,7 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - EPIC E / E2 Prefill mapping
   - EPIC F / F1 Submit flow + notifications
   - EPIC F / F2 Saved addresses list
+  - EPIC G / G1 Backend minimal tests
 - Notes:
   - Frontend and backend type definitions are intentionally separated (no shared type package).
   - Baseline validation passes: `lint`, `typecheck`, `test`.
@@ -48,8 +49,9 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - Submit flow now persists addresses through the create endpoint, shows inline submit feedback with success auto-dismiss, and surfaces API failures in a global banner.
   - Prefill orchestration now prevents repeated `/api/address-details` requests for the same selected suggestion.
   - Saved addresses now render from `GET /api/addresses` with immediate delete actions and loading/empty/error states.
+  - Backend core tests are now organized by endpoint area (health, countries, metadata, search/details, addresses, errors) while preserving happy-path and validation coverage.
 - Next:
-  - Start EPIC G / G1 Backend minimal tests verification.
+  - Start EPIC G / G2 Frontend minimal tests.
 
 ---
 
