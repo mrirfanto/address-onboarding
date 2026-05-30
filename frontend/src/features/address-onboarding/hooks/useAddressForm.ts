@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Resolver } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
@@ -31,7 +31,7 @@ export function useAddressForm({ fields, enabled }: UseAddressFormOptions) {
     void form.trigger();
   }, [fields, form]);
 
-  const applyPrefill = (values: Record<string, string>) => {
+  const applyPrefill = useCallback((values: Record<string, string>) => {
     const current = form.getValues();
     const next: Record<string, string> = { ...current };
 
@@ -44,11 +44,7 @@ export function useAddressForm({ fields, enabled }: UseAddressFormOptions) {
 
     form.reset(next);
     void form.trigger();
-  };
-
-  const onSubmit = form.handleSubmit(() => {
-    // API submission is implemented in a later slice.
-  });
+  }, [fields, form]);
 
   const canSubmit = enabled && form.formState.isValid && !form.formState.isSubmitting;
 
@@ -56,7 +52,6 @@ export function useAddressForm({ fields, enabled }: UseAddressFormOptions) {
     ...form,
     applyPrefill,
     canSubmit,
-    onSubmit,
   };
 }
 

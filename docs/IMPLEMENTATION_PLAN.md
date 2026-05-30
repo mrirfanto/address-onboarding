@@ -26,6 +26,7 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - EPIC D / D2 Schema generation and RHF integration
   - EPIC E / E1 Search endpoint integration + filtering
   - EPIC E / E2 Prefill mapping
+  - EPIC F / F1 Submit flow + notifications
 - Notes:
   - Frontend and backend type definitions are intentionally separated (no shared type package).
   - Baseline validation passes: `lint`, `typecheck`, `test`.
@@ -43,8 +44,10 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - Frontend now applies metadata-driven Zod schema validation via RHF in blur mode and blocks submission while invalid.
   - Autocomplete search is now integrated through `/api/address-search` with country-filtered suggestions and interactive dropdown behavior.
   - Selecting a suggestion now fetches `/api/address-details`, prefills mapped form fields, and supports explicit Manual Edit enablement.
+  - Submit flow now persists addresses through the create endpoint, shows inline submit feedback with success auto-dismiss, and surfaces API failures in a global banner.
+  - Prefill orchestration now prevents repeated `/api/address-details` requests for the same selected suggestion.
 - Next:
-  - Start EPIC F / F1 Submit flow + notifications.
+  - Start EPIC F / F2 Saved addresses list.
 
 ---
 

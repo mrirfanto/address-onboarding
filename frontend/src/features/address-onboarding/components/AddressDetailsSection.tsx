@@ -9,6 +9,10 @@ type AddressDetailsSectionProps = {
   error: boolean;
   enabled: boolean;
   form: AddressFormState;
+  submitLabel: string;
+  submitLoading: boolean;
+  submitMessage: { type: 'success' | 'error'; text: string } | null;
+  onSubmit: () => void;
 };
 
 function buildDescription(field: MetadataField) {
@@ -27,10 +31,20 @@ function buildDescription(field: MetadataField) {
   return parts.join(' | ');
 }
 
-export function AddressDetailsSection({ fields, loading, error, enabled, form }: AddressDetailsSectionProps) {
+export function AddressDetailsSection({
+  fields,
+  loading,
+  error,
+  enabled,
+  form,
+  submitLabel,
+  submitLoading,
+  submitMessage,
+  onSubmit,
+}: AddressDetailsSectionProps) {
   return (
     <Card withBorder>
-      <Stack component="form" gap="md" onSubmit={form.onSubmit}>
+      <Stack component="form" gap="md" onSubmit={form.handleSubmit(onSubmit)}>
         <Stack gap={2}>
           <Text fw={600}>Address Details</Text>
           <Text c="dimmed" size="sm">
@@ -46,6 +60,11 @@ export function AddressDetailsSection({ fields, loading, error, enabled, form }:
         {error ? (
           <Text c="red" size="sm">
             Failed to load metadata
+          </Text>
+        ) : null}
+        {submitMessage ? (
+          <Text c={submitMessage.type === 'success' ? 'teal' : 'red'} size="sm">
+            {submitMessage.text}
           </Text>
         ) : null}
 
@@ -101,8 +120,8 @@ export function AddressDetailsSection({ fields, loading, error, enabled, form }:
           </Grid>
         ) : null}
 
-        <Button type="submit" disabled={!form.canSubmit}>
-          Save Address
+        <Button type="submit" disabled={!form.canSubmit || submitLoading} loading={submitLoading}>
+          {submitLabel}
         </Button>
       </Stack>
     </Card>
