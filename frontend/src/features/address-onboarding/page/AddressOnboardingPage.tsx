@@ -4,6 +4,7 @@ import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { useCreateAddressMutation, useLazyGetAddressDetailsQuery } from '@shared/api/addressApi';
 import { AddressDetailsSection } from '@features/address-onboarding/components/AddressDetailsSection';
 import { AddressEntrySection } from '@features/address-onboarding/components/AddressEntrySection';
+import { SavedAddressesSection } from '@features/address-onboarding/components/SavedAddressesSection';
 import { useAddressForm } from '@features/address-onboarding/hooks/useAddressForm';
 import { useAddressSearch } from '@features/address-onboarding/hooks/useAddressSearch';
 import { useCountryMetadata } from '@features/address-onboarding/hooks/useCountryMetadata';
@@ -148,6 +149,8 @@ export function AddressOnboardingPage() {
             onSubmit={onSubmit}
           />
         ) : null}
+
+        <SavedAddressesSection />
       </Stack>
     </Container>
   );

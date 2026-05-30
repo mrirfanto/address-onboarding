@@ -27,6 +27,7 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - EPIC E / E1 Search endpoint integration + filtering
   - EPIC E / E2 Prefill mapping
   - EPIC F / F1 Submit flow + notifications
+  - EPIC F / F2 Saved addresses list
 - Notes:
   - Frontend and backend type definitions are intentionally separated (no shared type package).
   - Baseline validation passes: `lint`, `typecheck`, `test`.
@@ -46,8 +47,9 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - Selecting a suggestion now fetches `/api/address-details`, prefills mapped form fields, and supports explicit Manual Edit enablement.
   - Submit flow now persists addresses through the create endpoint, shows inline submit feedback with success auto-dismiss, and surfaces API failures in a global banner.
   - Prefill orchestration now prevents repeated `/api/address-details` requests for the same selected suggestion.
+  - Saved addresses now render from `GET /api/addresses` with immediate delete actions and loading/empty/error states.
 - Next:
-  - Start EPIC F / F2 Saved addresses list.
+  - Start EPIC G / G1 Backend minimal tests verification.
 
 ---
 
