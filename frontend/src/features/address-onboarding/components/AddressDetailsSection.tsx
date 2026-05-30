@@ -1,6 +1,6 @@
 import { Button, Card, Grid, Select, Stack, Text, TextInput } from '@mantine/core';
 import { Controller } from 'react-hook-form';
-import { useAddressForm } from '@features/address-onboarding/hooks/useAddressForm';
+import type { AddressFormState } from '@features/address-onboarding/hooks/useAddressForm';
 import type { MetadataField } from '@features/address-onboarding/types';
 
 type AddressDetailsSectionProps = {
@@ -8,6 +8,7 @@ type AddressDetailsSectionProps = {
   loading: boolean;
   error: boolean;
   enabled: boolean;
+  form: AddressFormState;
 };
 
 function buildDescription(field: MetadataField) {
@@ -26,9 +27,7 @@ function buildDescription(field: MetadataField) {
   return parts.join(' | ');
 }
 
-export function AddressDetailsSection({ fields, loading, error, enabled }: AddressDetailsSectionProps) {
-  const form = useAddressForm({ fields, enabled });
-
+export function AddressDetailsSection({ fields, loading, error, enabled, form }: AddressDetailsSectionProps) {
   return (
     <Card withBorder>
       <Stack component="form" gap="md" onSubmit={form.onSubmit}>
@@ -39,8 +38,16 @@ export function AddressDetailsSection({ fields, loading, error, enabled }: Addre
           </Text>
         </Stack>
 
-        {loading ? <Text c="dimmed" size="sm">Loading metadata...</Text> : null}
-        {error ? <Text c="red" size="sm">Failed to load metadata</Text> : null}
+        {loading ? (
+          <Text c="dimmed" size="sm">
+            Loading metadata...
+          </Text>
+        ) : null}
+        {error ? (
+          <Text c="red" size="sm">
+            Failed to load metadata
+          </Text>
+        ) : null}
 
         {!loading && !error ? (
           <Grid gutter="md">

@@ -31,6 +31,21 @@ export function useAddressForm({ fields, enabled }: UseAddressFormOptions) {
     void form.trigger();
   }, [fields, form]);
 
+  const applyPrefill = (values: Record<string, string>) => {
+    const current = form.getValues();
+    const next: Record<string, string> = { ...current };
+
+    for (const field of fields) {
+      const value = values[field.key];
+      if (value !== undefined) {
+        next[field.key] = value;
+      }
+    }
+
+    form.reset(next);
+    void form.trigger();
+  };
+
   const onSubmit = form.handleSubmit(() => {
     // API submission is implemented in a later slice.
   });
@@ -39,6 +54,7 @@ export function useAddressForm({ fields, enabled }: UseAddressFormOptions) {
 
   return {
     ...form,
+    applyPrefill,
     canSubmit,
     onSubmit,
   };

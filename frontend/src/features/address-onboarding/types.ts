@@ -61,6 +61,10 @@ export type AddressSearchResponse = {
   suggestions: AddressSuggestion[];
 };
 
+export type AddressDetailsResponse = {
+  values: Record<string, string>;
+};
+
 export type ApiError = {
   code: string;
   message: string;

@@ -1,4 +1,4 @@
-import { Badge, Box, Card, Grid, Select, Stack, Text, TextInput } from '@mantine/core';
+import { Badge, Box, Button, Card, Grid, Select, Stack, Text, TextInput } from '@mantine/core';
 import type { CountryMetadataState } from '@features/address-onboarding/hooks/useCountryMetadata';
 import type { AddressSuggestion } from '@features/address-onboarding/types';
 
@@ -14,6 +14,7 @@ type AddressEntrySectionProps = {
   hoveredSuggestionId: string | null;
   setHoveredSuggestionId: (value: string | null) => void;
   onSelectSuggestion: (suggestion: AddressSuggestion) => void;
+  onManualEdit: () => void;
 };
 
 export function AddressEntrySection({
@@ -28,6 +29,7 @@ export function AddressEntrySection({
   hoveredSuggestionId,
   setHoveredSuggestionId,
   onSelectSuggestion,
+  onManualEdit,
 }: AddressEntrySectionProps) {
   return (
     <Card withBorder>
@@ -121,6 +123,9 @@ export function AddressEntrySection({
             <Text c="dimmed" size="sm" mt="xs">
               Start typing to search and select an address.
             </Text>
+            <Button mt="sm" onClick={onManualEdit} size="xs" variant="light">
+              Manual Edit
+            </Button>
           </Grid.Col>
         </Grid>
       </Stack>

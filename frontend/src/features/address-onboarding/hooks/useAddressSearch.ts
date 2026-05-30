@@ -6,6 +6,7 @@ export function useAddressSearch(selectedCountry: CountryCode | null) {
   const [searchValue, setSearchValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [hoveredSuggestionId, setHoveredSuggestionId] = useState<string | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
 
   const canSearch = Boolean(selectedCountry && searchValue.trim().length > 0);
 
@@ -23,6 +24,14 @@ export function useAddressSearch(selectedCountry: CountryCode | null) {
 
   const onSelectSuggestion = (suggestion: AddressSuggestion) => {
     setSearchValue(suggestion.label);
+    setSelectedPlaceId(suggestion.placeId);
+    setIsFocused(false);
+    setHoveredSuggestionId(null);
+  };
+
+  const resetSearchState = () => {
+    setSearchValue('');
+    setSelectedPlaceId(null);
     setIsFocused(false);
     setHoveredSuggestionId(null);
   };
@@ -30,6 +39,7 @@ export function useAddressSearch(selectedCountry: CountryCode | null) {
   return {
     searchValue,
     setSearchValue,
+    selectedPlaceId,
     suggestions,
     isFetching,
     showDropdown,
@@ -43,5 +53,6 @@ export function useAddressSearch(selectedCountry: CountryCode | null) {
       }, 100);
     },
     onSelectSuggestion,
+    resetSearchState,
   };
 }

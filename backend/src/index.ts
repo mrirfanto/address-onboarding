@@ -24,6 +24,7 @@ type AddressSuggestion = {
   placeId: string;
   label: string;
 };
+type AddressDetailsValues = Record<string, string>;
 
 const suggestionFixtures: Record<CountryCode, AddressSuggestion[]> = {
   USA: [
@@ -39,6 +40,65 @@ const suggestionFixtures: Record<CountryCode, AddressSuggestion[]> = {
     { placeId: 'idn_1', label: 'Jl. MH Thamrin No. 1, Jakarta, Indonesia' },
     { placeId: 'idn_2', label: 'Jl. Asia Afrika No. 8, Bandung, Indonesia' },
   ],
+};
+const detailsFixtures: Record<CountryCode, Record<string, AddressDetailsValues>> = {
+  USA: {
+    usa_1: {
+      line1: '1600 Amphitheatre Pkwy',
+      line2: '',
+      city: 'Mountain View',
+      state: 'CA',
+      postalCode: '94043',
+    },
+    usa_2: {
+      line1: '1 Apple Park Way',
+      line2: '',
+      city: 'Cupertino',
+      state: 'CA',
+      postalCode: '95014',
+    },
+    usa_3: {
+      line1: '350 Fifth Avenue',
+      line2: '',
+      city: 'New York',
+      state: 'NY',
+      postalCode: '10118',
+    },
+  },
+  AUS: {
+    aus_1: {
+      line1: '1 Collins St',
+      line2: '',
+      suburb: 'Melbourne',
+      state: 'VIC',
+      postcode: '3000',
+    },
+    aus_2: {
+      line1: '200 George St',
+      line2: '',
+      suburb: 'Sydney',
+      state: 'NSW',
+      postcode: '2000',
+    },
+  },
+  IDN: {
+    idn_1: {
+      streetAddress: 'Jl. MH Thamrin No. 1',
+      village: '',
+      district: 'Menteng',
+      city: 'Jakarta Pusat',
+      province: 'DKI Jakarta',
+      postalCode: '10310',
+    },
+    idn_2: {
+      streetAddress: 'Jl. Asia Afrika No. 8',
+      village: '',
+      district: 'Sumur Bandung',
+      city: 'Bandung',
+      province: 'Jawa Barat',
+      postalCode: '40111',
+    },
+  },
 };
 
 export const countries: CountryOption[] = [
@@ -260,6 +320,7 @@ export function createApp() {
   api.get('/countries', countriesHandler);
   api.get('/metadata/:countryCode', metadataHandler);
   api.get('/address-search', addressSearchHandler);
+  api.get('/address-details', addressDetailsHandler);
   api.get('/addresses', listAddressesHandler);
   api.post('/addresses', createAddressHandler);
   api.delete('/addresses/:id', deleteAddressHandler);
@@ -327,6 +388,33 @@ export function addressSearchHandler(req: Request, res: Response) {
   const suggestions = countrySuggestions.filter((item) => item.label.toLowerCase().includes(query));
 
   res.status(200).json({ suggestions });
+}
+
+export function addressDetailsHandler(req: Request, res: Response) {
+  const validation = z
+    .object({
+      placeId: z.string().trim().min(1),
+      countryCode: z.enum(['USA', 'AUS', 'IDN']),
+    })
+    .safeParse({
+      placeId: req.query.placeId,
+      countryCode: req.query.countryCode,
+    });
+
+  if (!validation.success) {
+    res.status(400).json({
+      code: 'VALIDATION_ERROR',
+      message: 'Address details query is invalid',
+      details: validation.error.issues.map((issue) => ({
+        field: issue.path.join('.') || 'query',
+        message: issue.message,
+      })),
+    });
+    return;
+  }
+
+  const values = detailsFixtures[validation.data.countryCode][validation.data.placeId] ?? {};
+  res.status(200).json({ values });
 }
 
 export function createAddressHandler(req: Request, res: Response) {

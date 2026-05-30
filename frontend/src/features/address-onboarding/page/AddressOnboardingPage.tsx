@@ -1,17 +1,54 @@
 import { Container, Stack, Text, Title } from '@mantine/core';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useLazyGetAddressDetailsQuery } from '@shared/api/addressApi';
 import { AddressDetailsSection } from '@features/address-onboarding/components/AddressDetailsSection';
 import { AddressEntrySection } from '@features/address-onboarding/components/AddressEntrySection';
+import { useAddressForm } from '@features/address-onboarding/hooks/useAddressForm';
 import { useAddressSearch } from '@features/address-onboarding/hooks/useAddressSearch';
 import { useCountryMetadata } from '@features/address-onboarding/hooks/useCountryMetadata';
 
 export function AddressOnboardingPage() {
   const countrySection = useCountryMetadata();
   const search = useAddressSearch(countrySection.selectedCountry);
+  const [manualEditEnabled, setManualEditEnabled] = useState(false);
+  const [prefillReady, setPrefillReady] = useState(false);
+  const [fetchDetails] = useLazyGetAddressDetailsQuery();
+
+  const canEditDetails = manualEditEnabled || prefillReady;
+
+  const form = useAddressForm({
+    fields: countrySection.sortedFields,
+    enabled:
+      canEditDetails &&
+      !countrySection.metadataLoading &&
+      !countrySection.metadataError,
+  });
 
   useEffect(() => {
-    search.setSearchValue('');
+    search.resetSearchState();
+    setManualEditEnabled(false);
+    setPrefillReady(false);
   }, [countrySection.selectedCountry]);
+
+  useEffect(() => {
+    async function prefillFromPlace() {
+      if (!countrySection.selectedCountry || !search.selectedPlaceId) {
+        return;
+      }
+
+      const response = await fetchDetails({
+        placeId: search.selectedPlaceId,
+        countryCode: countrySection.selectedCountry,
+      });
+
+      if ('data' in response && response.data) {
+        form.applyPrefill(response.data.values);
+        setPrefillReady(true);
+      }
+    }
+
+    void prefillFromPlace();
+  }, [countrySection.selectedCountry, fetchDetails, form, search.selectedPlaceId]);
 
   return (
     <Container py="xl" size="lg">
@@ -35,6 +72,7 @@ export function AddressOnboardingPage() {
           hoveredSuggestionId={search.hoveredSuggestionId}
           setHoveredSuggestionId={search.setHoveredSuggestionId}
           onSelectSuggestion={search.onSelectSuggestion}
+          onManualEdit={() => setManualEditEnabled(true)}
         />
 
         {countrySection.selectedCountry ? (
@@ -42,7 +80,8 @@ export function AddressOnboardingPage() {
             fields={countrySection.sortedFields}
             loading={countrySection.metadataLoading}
             error={countrySection.metadataError}
-            enabled={!countrySection.metadataLoading && !countrySection.metadataError}
+            enabled={canEditDetails && !countrySection.metadataLoading && !countrySection.metadataError}
+            form={form}
           />
         ) : null}
       </Stack>

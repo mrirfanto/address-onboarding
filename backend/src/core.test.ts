@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Request, Response } from 'express';
 import type { AddressRecord, CountryCode, CountryMetadata } from './types/domain.js';
 import {
+  addressDetailsHandler,
   addressSearchHandler,
   createAddressHandler,
   countries,
@@ -172,6 +173,39 @@ describe('API bootstrap handlers', () => {
     expect(body.value).toMatchObject({
       code: 'VALIDATION_ERROR',
       message: 'Search query is invalid',
+    });
+  });
+
+  it('GET /api/address-details returns mapped values for valid place id and country', () => {
+    const { res, statusCode, body } = createMockResponse();
+    addressDetailsHandler(
+      { query: { placeId: 'usa_2', countryCode: 'USA' } } as unknown as Request,
+      res
+    );
+
+    expect(statusCode.value).toBe(200);
+    expect(body.value).toEqual({
+      values: {
+        line1: '1 Apple Park Way',
+        line2: '',
+        city: 'Cupertino',
+        state: 'CA',
+        postalCode: '95014',
+      },
+    });
+  });
+
+  it('GET /api/address-details returns 400 for invalid params', () => {
+    const { res, statusCode, body } = createMockResponse();
+    addressDetailsHandler(
+      { query: { placeId: '', countryCode: 'SGP' } } as unknown as Request,
+      res
+    );
+
+    expect(statusCode.value).toBe(400);
+    expect(body.value).toMatchObject({
+      code: 'VALIDATION_ERROR',
+      message: 'Address details query is invalid',
     });
   });
 
