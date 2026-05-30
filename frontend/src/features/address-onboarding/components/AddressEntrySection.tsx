@@ -1,16 +1,33 @@
-import { Badge, Card, Grid, Select, Stack, Text, TextInput } from '@mantine/core';
+import { Badge, Box, Card, Grid, Select, Stack, Text, TextInput } from '@mantine/core';
 import type { CountryMetadataState } from '@features/address-onboarding/hooks/useCountryMetadata';
+import type { AddressSuggestion } from '@features/address-onboarding/types';
 
 type AddressEntrySectionProps = {
   section: CountryMetadataState;
-  addressSearch: string;
-  onAddressSearchChange: (value: string) => void;
+  searchValue: string;
+  setSearchValue: (value: string) => void;
+  onSearchFocus: () => void;
+  onSearchBlur: () => void;
+  showDropdown: boolean;
+  suggestions: AddressSuggestion[];
+  searchLoading: boolean;
+  hoveredSuggestionId: string | null;
+  setHoveredSuggestionId: (value: string | null) => void;
+  onSelectSuggestion: (suggestion: AddressSuggestion) => void;
 };
 
 export function AddressEntrySection({
   section,
-  addressSearch,
-  onAddressSearchChange,
+  searchValue,
+  setSearchValue,
+  onSearchFocus,
+  onSearchBlur,
+  showDropdown,
+  suggestions,
+  searchLoading,
+  hoveredSuggestionId,
+  setHoveredSuggestionId,
+  onSelectSuggestion,
 }: AddressEntrySectionProps) {
   return (
     <Card withBorder>
@@ -42,15 +59,67 @@ export function AddressEntrySection({
           </Grid.Col>
 
           <Grid.Col span={{ base: 12, md: 8 }}>
-            <TextInput
-              label="Search Address"
-              placeholder="Start typing to search your address"
-              value={addressSearch}
-              onChange={(event) => onAddressSearchChange(event.currentTarget.value)}
-              disabled={!section.selectedCountry}
-            />
+            <Box style={{ position: 'relative' }}>
+              <TextInput
+                label="Search Address"
+                placeholder="Start typing to search your address"
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.currentTarget.value)}
+                onFocus={onSearchFocus}
+                onBlur={onSearchBlur}
+                disabled={!section.selectedCountry}
+              />
+
+              {showDropdown ? (
+                <Box
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 6px)',
+                    left: 0,
+                    right: 0,
+                    background: 'white',
+                    border: '1px solid var(--mantine-color-gray-3)',
+                    borderRadius: 8,
+                    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.06)',
+                    zIndex: 50,
+                    overflow: 'hidden',
+                  }}
+                >
+                  {suggestions.length > 0 ? (
+                    suggestions.map((suggestion) => (
+                      <Box
+                        key={suggestion.placeId}
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+                          onSelectSuggestion(suggestion);
+                        }}
+                        onMouseEnter={() => setHoveredSuggestionId(suggestion.placeId)}
+                        onMouseLeave={() => setHoveredSuggestionId(null)}
+                        style={{
+                          padding: '10px 12px',
+                          fontSize: 14,
+                          cursor: 'pointer',
+                          borderBottom: '1px solid var(--mantine-color-gray-2)',
+                          backgroundColor:
+                            hoveredSuggestionId === suggestion.placeId
+                              ? 'var(--mantine-color-gray-1)'
+                              : 'white',
+                          transition: 'background-color 140ms ease',
+                        }}
+                      >
+                        {suggestion.label}
+                      </Box>
+                    ))
+                  ) : (
+                    <Text c="dimmed" px="sm" py="xs" size="sm">
+                      {searchLoading ? 'Searching...' : 'No suggestions found'}
+                    </Text>
+                  )}
+                </Box>
+              ) : null}
+            </Box>
             <Text c="dimmed" size="sm" mt="xs">
-              Autocomplete integration will be added in later slices.
+              Start typing to search and select an address.
             </Text>
           </Grid.Col>
         </Grid>

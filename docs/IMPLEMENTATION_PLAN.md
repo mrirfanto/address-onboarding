@@ -24,6 +24,7 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - EPIC C / C3 Country select + metadata loading flow
   - EPIC D / D1 Metadata-to-field renderer
   - EPIC D / D2 Schema generation and RHF integration
+  - EPIC E / E1 Search endpoint integration + filtering
 - Notes:
   - Frontend and backend type definitions are intentionally separated (no shared type package).
   - Baseline validation passes: `lint`, `typecheck`, `test`.
@@ -39,8 +40,9 @@ Deliver the MVP defined in `PRD.md`, implemented according to `TDD.md`, using `A
   - Frontend dev server proxy now forwards `/api` requests to backend port `3001` for local integration.
   - Frontend now renders dynamic metadata-driven address fields (`text` and `select`) in stable order with disabled-by-default state.
   - Frontend now applies metadata-driven Zod schema validation via RHF in blur mode and blocks submission while invalid.
+  - Autocomplete search is now integrated through `/api/address-search` with country-filtered suggestions and interactive dropdown behavior.
 - Next:
-  - Start EPIC E / E1 Search endpoint integration + filtering.
+  - Start EPIC E / E2 Prefill mapping.
 
 ---
 

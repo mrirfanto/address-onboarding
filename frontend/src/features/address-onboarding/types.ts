@@ -52,6 +52,15 @@ export type SavedAddress = {
   createdAt: string;
 };
 
+export type AddressSuggestion = {
+  placeId: string;
+  label: string;
+};
+
+export type AddressSearchResponse = {
+  suggestions: AddressSuggestion[];
+};
+
 export type ApiError = {
   code: string;
   message: string;

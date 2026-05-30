@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
+  AddressSearchResponse,
   AddressCreatePayload,
   CountryCode,
   CountryMetadataResponse,
@@ -19,6 +20,12 @@ export const addressApi = createApi({
     getMetadata: builder.query<CountryMetadataResponse, CountryCode>({
       query: (countryCode) => `/metadata/${countryCode}`,
       providesTags: (_result, _error, countryCode) => [{ type: 'Metadata', id: countryCode }],
+    }),
+    getAddressSearch: builder.query<AddressSearchResponse, { query: string; countryCode: CountryCode }>({
+      query: ({ query, countryCode }) => ({
+        url: '/address-search',
+        params: { query, countryCode },
+      }),
     }),
     createAddress: builder.mutation<SavedAddress, AddressCreatePayload>({
       query: (body) => ({
@@ -54,6 +61,7 @@ export const addressApi = createApi({
 export const {
   useGetCountriesQuery,
   useGetMetadataQuery,
+  useGetAddressSearchQuery,
   useCreateAddressMutation,
   useGetAddressesQuery,
   useDeleteAddressMutation,

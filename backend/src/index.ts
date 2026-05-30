@@ -20,6 +20,27 @@ type AddressCreatePayload = {
   values: Record<string, string>;
 };
 
+type AddressSuggestion = {
+  placeId: string;
+  label: string;
+};
+
+const suggestionFixtures: Record<CountryCode, AddressSuggestion[]> = {
+  USA: [
+    { placeId: 'usa_1', label: '1600 Amphitheatre Pkwy, Mountain View, CA, USA' },
+    { placeId: 'usa_2', label: '1 Apple Park Way, Cupertino, CA, USA' },
+    { placeId: 'usa_3', label: '350 Fifth Avenue, New York, NY, USA' },
+  ],
+  AUS: [
+    { placeId: 'aus_1', label: '1 Collins St, Melbourne VIC, Australia' },
+    { placeId: 'aus_2', label: '200 George St, Sydney NSW, Australia' },
+  ],
+  IDN: [
+    { placeId: 'idn_1', label: 'Jl. MH Thamrin No. 1, Jakarta, Indonesia' },
+    { placeId: 'idn_2', label: 'Jl. Asia Afrika No. 8, Bandung, Indonesia' },
+  ],
+};
+
 export const countries: CountryOption[] = [
   { code: 'USA', name: 'United States' },
   { code: 'AUS', name: 'Australia' },
@@ -238,6 +259,7 @@ export function createApp() {
   api.get('/health', healthHandler);
   api.get('/countries', countriesHandler);
   api.get('/metadata/:countryCode', metadataHandler);
+  api.get('/address-search', addressSearchHandler);
   api.get('/addresses', listAddressesHandler);
   api.post('/addresses', createAddressHandler);
   api.delete('/addresses/:id', deleteAddressHandler);
@@ -275,6 +297,36 @@ export function metadataHandler(req: Request, res: Response) {
   }
 
   res.status(200).json(metadataByCountry[countryCode]);
+}
+
+export function addressSearchHandler(req: Request, res: Response) {
+  const validation = z
+    .object({
+      query: z.string().trim().min(1),
+      countryCode: z.enum(['USA', 'AUS', 'IDN']),
+    })
+    .safeParse({
+      query: req.query.query,
+      countryCode: req.query.countryCode,
+    });
+
+  if (!validation.success) {
+    res.status(400).json({
+      code: 'VALIDATION_ERROR',
+      message: 'Search query is invalid',
+      details: validation.error.issues.map((issue) => ({
+        field: issue.path.join('.') || 'query',
+        message: issue.message,
+      })),
+    });
+    return;
+  }
+
+  const query = validation.data.query.toLowerCase();
+  const countrySuggestions = suggestionFixtures[validation.data.countryCode];
+  const suggestions = countrySuggestions.filter((item) => item.label.toLowerCase().includes(query));
+
+  res.status(200).json({ suggestions });
 }
 
 export function createAddressHandler(req: Request, res: Response) {

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Request, Response } from 'express';
 import type { AddressRecord, CountryCode, CountryMetadata } from './types/domain.js';
 import {
+  addressSearchHandler,
   createAddressHandler,
   countries,
   countriesHandler,
@@ -144,6 +145,33 @@ describe('API bootstrap handlers', () => {
     expect(body.value).toEqual({
       code: 'NOT_FOUND',
       message: 'Route not found',
+    });
+  });
+
+  it('GET /api/address-search returns country-filtered suggestions', () => {
+    const { res, statusCode, body } = createMockResponse();
+    addressSearchHandler(
+      { query: { query: 'cupertino', countryCode: 'USA' } } as unknown as Request,
+      res
+    );
+
+    expect(statusCode.value).toBe(200);
+    expect(body.value).toEqual({
+      suggestions: [{ placeId: 'usa_2', label: '1 Apple Park Way, Cupertino, CA, USA' }],
+    });
+  });
+
+  it('GET /api/address-search returns 400 for invalid search params', () => {
+    const { res, statusCode, body } = createMockResponse();
+    addressSearchHandler(
+      { query: { query: '', countryCode: 'SGP' } } as unknown as Request,
+      res
+    );
+
+    expect(statusCode.value).toBe(400);
+    expect(body.value).toMatchObject({
+      code: 'VALIDATION_ERROR',
+      message: 'Search query is invalid',
     });
   });
 

@@ -1,15 +1,16 @@
 import { Container, Stack, Text, Title } from '@mantine/core';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AddressDetailsSection } from '@features/address-onboarding/components/AddressDetailsSection';
 import { AddressEntrySection } from '@features/address-onboarding/components/AddressEntrySection';
+import { useAddressSearch } from '@features/address-onboarding/hooks/useAddressSearch';
 import { useCountryMetadata } from '@features/address-onboarding/hooks/useCountryMetadata';
 
 export function AddressOnboardingPage() {
   const countrySection = useCountryMetadata();
-  const [addressSearch, setAddressSearch] = useState('');
+  const search = useAddressSearch(countrySection.selectedCountry);
 
   useEffect(() => {
-    setAddressSearch('');
+    search.setSearchValue('');
   }, [countrySection.selectedCountry]);
 
   return (
@@ -24,8 +25,16 @@ export function AddressOnboardingPage() {
 
         <AddressEntrySection
           section={countrySection}
-          addressSearch={addressSearch}
-          onAddressSearchChange={setAddressSearch}
+          searchValue={search.searchValue}
+          setSearchValue={search.setSearchValue}
+          onSearchFocus={search.onFocus}
+          onSearchBlur={search.onBlur}
+          showDropdown={search.showDropdown}
+          suggestions={search.suggestions}
+          searchLoading={search.isFetching}
+          hoveredSuggestionId={search.hoveredSuggestionId}
+          setHoveredSuggestionId={search.setHoveredSuggestionId}
+          onSelectSuggestion={search.onSelectSuggestion}
         />
 
         {countrySection.selectedCountry ? (
