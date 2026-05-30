@@ -33,6 +33,7 @@ export function AddressOnboardingPage() {
             fields={countrySection.sortedFields}
             loading={countrySection.metadataLoading}
             error={countrySection.metadataError}
+            enabled={!countrySection.metadataLoading && !countrySection.metadataError}
           />
         ) : null}
       </Stack>

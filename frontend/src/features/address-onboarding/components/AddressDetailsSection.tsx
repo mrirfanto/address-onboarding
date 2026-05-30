@@ -1,10 +1,13 @@
-import { Badge, Card, Grid, Select, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Card, Grid, Select, Stack, Text, TextInput } from '@mantine/core';
+import { Controller } from 'react-hook-form';
+import { useAddressForm } from '@features/address-onboarding/hooks/useAddressForm';
 import type { MetadataField } from '@features/address-onboarding/types';
 
 type AddressDetailsSectionProps = {
   fields: MetadataField[];
   loading: boolean;
   error: boolean;
+  enabled: boolean;
 };
 
 function buildDescription(field: MetadataField) {
@@ -23,39 +26,52 @@ function buildDescription(field: MetadataField) {
   return parts.join(' | ');
 }
 
-export function AddressDetailsSection({ fields, loading, error }: AddressDetailsSectionProps) {
+export function AddressDetailsSection({ fields, loading, error, enabled }: AddressDetailsSectionProps) {
+  const form = useAddressForm({ fields, enabled });
+
   return (
     <Card withBorder>
-      <Stack gap="md">
+      <Stack component="form" gap="md" onSubmit={form.onSubmit}>
         <Stack gap={2}>
           <Text fw={600}>Address Details</Text>
           <Text c="dimmed" size="sm">
-            Dynamic fields are currently read-only. Manual editing will be enabled in a later slice.
+            Complete the required fields. Validation runs when a field loses focus.
           </Text>
         </Stack>
 
-        {loading ? <Badge color="gray">Loading metadata...</Badge> : null}
-        {error ? <Badge color="red">Failed to load metadata</Badge> : null}
+        {loading ? <Text c="dimmed" size="sm">Loading metadata...</Text> : null}
+        {error ? <Text c="red" size="sm">Failed to load metadata</Text> : null}
 
         {!loading && !error ? (
           <Grid gutter="md">
             {fields.map((field) => {
               const description = buildDescription(field);
               const key = `dynamic-${field.key}`;
+              const fieldError = form.formState.errors[field.key]?.message;
 
               if (field.type === 'select') {
                 return (
                   <Grid.Col key={key} span={{ base: 12, md: 6 }}>
-                    <Select
-                      label={field.title}
-                      required={field.required}
-                      description={description || undefined}
-                      placeholder={`Select ${field.title.toLowerCase()}`}
-                      data={(field.options ?? []).map((option) => ({
-                        value: option.value,
-                        label: option.label,
-                      }))}
-                      disabled
+                    <Controller
+                      control={form.control}
+                      name={field.key}
+                      render={({ field: controlledField }) => (
+                        <Select
+                          label={field.title}
+                          required={field.required}
+                          description={description || undefined}
+                          placeholder={`Select ${field.title.toLowerCase()}`}
+                          data={(field.options ?? []).map((option) => ({
+                            value: option.value,
+                            label: option.label,
+                          }))}
+                          value={controlledField.value ?? ''}
+                          onChange={(value) => controlledField.onChange(value ?? '')}
+                          onBlur={controlledField.onBlur}
+                          error={fieldError ? String(fieldError) : undefined}
+                          disabled={!enabled}
+                        />
+                      )}
                     />
                   </Grid.Col>
                 );
@@ -68,13 +84,19 @@ export function AddressDetailsSection({ fields, loading, error }: AddressDetails
                     required={field.required}
                     description={description || undefined}
                     placeholder={`Enter ${field.title.toLowerCase()}`}
-                    disabled
+                    {...form.register(field.key)}
+                    error={fieldError ? String(fieldError) : undefined}
+                    disabled={!enabled}
                   />
                 </Grid.Col>
               );
             })}
           </Grid>
         ) : null}
+
+        <Button type="submit" disabled={!form.canSubmit}>
+          Save Address
+        </Button>
       </Stack>
     </Card>
   );
