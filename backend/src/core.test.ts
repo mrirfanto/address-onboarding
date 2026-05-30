@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { Request, Response } from 'express';
 import type { AddressRecord, CountryCode, CountryMetadata } from './types/domain.js';
-import { countries, countriesHandler, errorHandler, errorRouteHandler, healthHandler, notFoundHandler } from './index.js';
+import {
+  countries,
+  countriesHandler,
+  errorHandler,
+  errorRouteHandler,
+  healthHandler,
+  metadataByCountry,
+  metadataHandler,
+  notFoundHandler,
+} from './index.js';
 
 describe('backend domain type contracts', () => {
   it('CountryCode type accepts only supported literals', () => {
@@ -92,6 +101,40 @@ describe('API bootstrap handlers', () => {
       { code: 'AUS', name: 'Australia' },
       { code: 'IDN', name: 'Indonesia' },
     ]);
+  });
+
+  it('GET /api/metadata/:countryCode handler returns metadata for a supported country', () => {
+    const { res, statusCode, body } = createMockResponse();
+    metadataHandler({ params: { countryCode: 'USA' } } as unknown as Request, res);
+
+    expect(statusCode.value).toBe(200);
+    expect(body.value).toEqual(metadataByCountry.USA);
+  });
+
+  it('GET /api/metadata/:countryCode handler preserves IDN province and village semantics', () => {
+    const { res, statusCode, body } = createMockResponse();
+    metadataHandler({ params: { countryCode: 'IDN' } } as unknown as Request, res);
+
+    expect(statusCode.value).toBe(200);
+
+    const payload = body.value as CountryMetadata;
+    const province = payload.fields.find((field) => field.key === 'province');
+    const village = payload.fields.find((field) => field.key === 'village');
+
+    expect(province?.type).toBe('select');
+    expect((province?.options?.length ?? 0) > 0).toBe(true);
+    expect(village?.required).toBe(false);
+  });
+
+  it('GET /api/metadata/:countryCode handler returns 404 for unsupported country', () => {
+    const { res, statusCode, body } = createMockResponse();
+    metadataHandler({ params: { countryCode: 'SGP' } } as unknown as Request, res);
+
+    expect(statusCode.value).toBe(404);
+    expect(body.value).toEqual({
+      code: 'NOT_FOUND',
+      message: 'Route not found',
+    });
   });
 
   it('unknown /api route handler returns 404 NOT_FOUND payload', () => {
